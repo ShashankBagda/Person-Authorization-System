@@ -1,10 +1,9 @@
 import cv2
-from pyzbar.pyzbar import decode
+from pyzbar import pyzbar
 import csv
 import numpy as np
 
 while True:
-    
     # Open the camera
     cap = cv2.VideoCapture(0)
 
@@ -12,16 +11,16 @@ while True:
         # Capture a frame from the camera
         ret, frame = cap.read()
 
-        # Decode the QR code in the frame
-        decoded_objs = decode(frame)
+        # Decode the barcode in the frame
+        decoded_objs = pyzbar.decode(frame)
 
-        # Display the frame with QR code bounding boxes
+        # Display the frame with barcode bounding boxes
         for obj in decoded_objs:
-            # Extract the QR code data
+            # Extract the barcode data
             data = obj.data.decode('utf-8')
-            print("QR code data:", data)
+            print("Barcode data:", data)
 
-            # Draw a bounding box around the QR code
+            # Draw a bounding box around the barcode
             rect = obj.rect
             cv2.rectangle(frame, (rect.left, rect.top), (rect.left + rect.width, rect.top + rect.height), (0, 255, 0), 3)
 
@@ -32,7 +31,7 @@ while True:
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-        # If a QR code is detected, stop capturing frames and exit the loop
+        # If a barcode is detected, stop capturing frames and exit the loop
         if len(decoded_objs) > 0:
             break
 
@@ -43,15 +42,14 @@ while True:
     cv2.destroyAllWindows()
 
     # Import CSV file and compare the user data
-    # opening the CSV file
-    with open('Student_data.csv', mode ='r') as file:
-
-        # reading the CSV file
+    # Opening the CSV file
+    with open('Student_data.csv', mode='r') as file:
+        # Reading the CSV file
         csvFile = csv.reader(file)
 
         arr = np.array([])
 
-        # displaying the contents of the CSV file
+        # Displaying the contents of the CSV file
         for lines in csvFile:
             arr = np.append(arr, lines)
 
@@ -59,7 +57,7 @@ while True:
             print('User is available...')
         else:
             print('Not Available')
-            
-# Exit the loop if 'q' is pressed
+
+    # Exit the loop if 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break

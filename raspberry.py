@@ -1,10 +1,25 @@
+# sudo apt-get update
+# sudo apt-get upgrade
+# pip3 install pyzbar
+# pip3 install numpy
+# pip3 install RPi.GPIO
+# sudo apt-get install python3-opencv
+
 import cv2
 from pyzbar.pyzbar import decode
 import csv
 import numpy as np
+import RPi.GPIO as GPIO
+import time
+
+# Set up GPIO pins
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(20, GPIO.OUT) # Lock
+GPIO.setup(21, GPIO.OUT) # Buzzer
+
 
 while True:
-    
+
     # Open the camera
     cap = cv2.VideoCapture(0)
 
@@ -57,9 +72,20 @@ while True:
 
         if data in arr:
             print('User is available...')
+            GPIO.output(20, GPIO.HIGH) # High the relay
+            time.sleep(3)
+            GPIO.output(20, GPIO.LOW)
         else:
             print('Not Available')
-            
-# Exit the loop if 'q' is pressed
+            for i in range(0,10):
+                GPIO.output(21, GPIO.HIGH) # Fire buzzer
+                time.sleep(0.3)
+                GPIO.output(21, GPIO.LOW)
+                time.sleep(0.3)
+
+    # Clean up GPIO pins
+    GPIO.cleanup()
+    
+    # Exit the loop if 'q' is pressed
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
