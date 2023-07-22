@@ -1,9 +1,11 @@
 # sudo apt-get update
 # sudo apt-get upgrade
-# pip3 install pyzbar
-# pip3 install numpy
-# pip3 install RPi.GPIO
-# sudo apt-get install python3-opencv
+# pip install pyzbar
+# pip install numpy
+# pip install RPi.GPIO
+# pip install opencv-python
+# sudo apt-get install -y python-smbus
+# sudo pip install adafruit-circuitpython-charlcd
 
 import cv2
 from pyzbar.pyzbar import decode
@@ -11,19 +13,41 @@ import csv
 import numpy as np
 import RPi.GPIO as GPIO
 import time
+import board
+import busio
+import adafruit_character_lcd.character_lcd_i2c as character_lcd
+
 
 # Set up GPIO pins
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(20, GPIO.OUT) # Lock
 GPIO.setup(21, GPIO.OUT) # Buzzer
 
+# Set the I2C address of your LCD
+lcd_i2c_address = 0x27
+
+# Define LCD column and row size for 16x2 LCD
+lcd_columns = 16
+lcd_rows = 2
+
+# Initialize I2C bus and LCD controller
+i2c = busio.I2C(board.SCL, board.SDA)
+lcd = character_lcd.Character_LCD_I2C(i2c, lcd_columns, lcd_rows, address=lcd_i2c_address)
 
 while True:
 
     # Open the camera
     cap = cv2.VideoCapture(0)
 
+    # Display text on the LCD
+    lcd.clear()
+    lcd.message = "   Welcome To   \nCircuitology Club"
+    time.sleep(2)
+    lcd.clear()
+    lcd.message = "Please Scan Your\n    ID Card    "
+
     while True:
+
         # Capture a frame from the camera
         ret, frame = cap.read()
 
@@ -72,15 +96,19 @@ while True:
 
         if data in arr:
             print('User is available...')
-            GPIO.output(20, GPIO.HIGH) # High the relay
-            time.sleep(3)
-            GPIO.output(20, GPIO.LOW)
+            lcd.clear()
+            lcd.message = " Welcome Member \n Keep  Learning "
+            GPIO.output(21, GPIO.HIGH) # High the relay
+            time.sleep(5)
+            GPIO.output(21, GPIO.LOW)
         else:
             print('Not Available')
+            lcd.clear()
+            lcd.message = "  Unauthorised  \nPerson or Rescan"
             for i in range(0,10):
-                GPIO.output(21, GPIO.HIGH) # Fire buzzer
+                GPIO.output(20, GPIO.HIGH) # Fire buzzer
                 time.sleep(0.3)
-                GPIO.output(21, GPIO.LOW)
+                GPIO.output(20, GPIO.LOW)
                 time.sleep(0.3)
 
     # Clean up GPIO pins
