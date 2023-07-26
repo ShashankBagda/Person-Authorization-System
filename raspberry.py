@@ -13,9 +13,9 @@ import csv
 import numpy as np
 import RPi.GPIO as GPIO
 import time
-import board
-import busio
-import adafruit_character_lcd.character_lcd_i2c as character_lcd
+#import board
+#import busio
+#import adafruit_character_lcd.character_lcd_i2c as character_lcd
 
 
 # Set up GPIO pins
@@ -24,15 +24,15 @@ GPIO.setup(20, GPIO.OUT) # Lock
 GPIO.setup(21, GPIO.OUT) # Buzzer
 
 # Set the I2C address of your LCD
-lcd_i2c_address = 0x27
+#lcd_i2c_address = 0x27
 
 # Define LCD column and row size for 16x2 LCD
-lcd_columns = 16
-lcd_rows = 2
+#lcd_columns = 16
+#lcd_rows = 2
 
 # Initialize I2C bus and LCD controller
-i2c = busio.I2C(board.SCL, board.SDA)
-lcd = character_lcd.Character_LCD_I2C(i2c, lcd_columns, lcd_rows, address=lcd_i2c_address)
+#i2c = busio.I2C(board.SCL, board.SDA)
+#lcd = character_lcd.Character_LCD_I2C(i2c, lcd_columns, lcd_rows, address=lcd_i2c_address)
 
 while True:
 
@@ -40,11 +40,11 @@ while True:
     cap = cv2.VideoCapture(0)
 
     # Display text on the LCD
-    lcd.clear()
-    lcd.message = "   Welcome To   \nCircuitology Club"
-    time.sleep(2)
-    lcd.clear()
-    lcd.message = "Please Scan Your\n    ID Card    "
+ #   lcd.clear()
+  #  lcd.message = "   Welcome To   \nCircuitology Club"
+   # time.sleep(2)
+    #lcd.clear()
+    #lcd.message = "Please Scan Your\n    ID Card    "
 
     while True:
 
@@ -96,15 +96,15 @@ while True:
 
         if data in arr:
             print('User is available...')
-            lcd.clear()
-            lcd.message = " Welcome Member \n Keep  Learning "
+            #lcd.clear()
+            #lcd.message = " Welcome Member \n Keep  Learning "
             GPIO.output(21, GPIO.HIGH) # High the relay
             time.sleep(5)
             GPIO.output(21, GPIO.LOW)
         else:
             print('Not Available')
-            lcd.clear()
-            lcd.message = "  Unauthorised  \nPerson or Rescan"
+            #lcd.clear()
+            #lcd.message = "  Unauthorised  \nPerson or Rescan"
             for i in range(0,10):
                 GPIO.output(20, GPIO.HIGH) # Fire buzzer
                 time.sleep(0.3)
