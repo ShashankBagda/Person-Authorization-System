@@ -1,119 +1,57 @@
-# sudo apt-get update
-# sudo apt-get upgrade
-# pip install pyzbar
-# pip install numpy
-# pip install RPi.GPIO
-# pip install opencv-python
-# sudo apt-get install -y python-smbus
-# sudo pip install adafruit-circuitpython-charlcd
-
-import cv2
-from pyzbar.pyzbar import decode
-import csv
-import numpy as np
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import zbarlight
 import RPi.GPIO as GPIO
 import time
-#import board
-#import busio
-#import adafruit_character_lcd.character_lcd_i2c as character_lcd
 
+# GPIO pin numbers for LEDs
+GREEN_LED_PIN = 18
+RED_LED_PIN = 23
 
-# Set up GPIO pins
+# Set up GPIO
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(20, GPIO.OUT) # Lock
-GPIO.setup(21, GPIO.OUT) # Buzzer
+GPIO.setup(GREEN_LED_PIN, GPIO.OUT)
+GPIO.setup(RED_LED_PIN, GPIO.OUT)
 
-# Set the I2C address of your LCD
-#lcd_i2c_address = 0x27
+# Google Sheets credentials
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
+client = gspread.authorize(creds)
 
-# Define LCD column and row size for 16x2 LCD
-#lcd_columns = 16
-#lcd_rows = 2
+# Google Sheets document and worksheet
+spreadsheet = client.open('YourGoogleSheetName')
+worksheet = spreadsheet.sheet1
 
-# Initialize I2C bus and LCD controller
-#i2c = busio.I2C(board.SCL, board.SDA)
-#lcd = character_lcd.Character_LCD_I2C(i2c, lcd_columns, lcd_rows, address=lcd_i2c_address)
-
-while True:
-
-    # Open the camera
-    cap = cv2.VideoCapture(0)
-
-    # Display text on the LCD
- #   lcd.clear()
-  #  lcd.message = "   Welcome To   \nCircuitology Club"
-   # time.sleep(2)
-    #lcd.clear()
-    #lcd.message = "Please Scan Your\n    ID Card    "
-
-    while True:
-
-        # Capture a frame from the camera
-        ret, frame = cap.read()
-
-        # Decode the QR code in the frame
-        decoded_objs = decode(frame)
-
-        # Display the frame with QR code bounding boxes
-        for obj in decoded_objs:
-            # Extract the QR code data
-            data = obj.data.decode('utf-8')
-            print("QR code data:", data)
-
-            # Draw a bounding box around the QR code
-            rect = obj.rect
-            cv2.rectangle(frame, (rect.left, rect.top), (rect.left + rect.width, rect.top + rect.height), (0, 255, 0), 3)
-
-        # Display the frame
-        cv2.imshow('frame', frame)
-
-        # Exit the loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-        # If a QR code is detected, stop capturing frames and exit the loop
-        if len(decoded_objs) > 0:
-            break
-
-    # Release the camera
-    cap.release()
-
-    # Close all windows
-    cv2.destroyAllWindows()
-
-    # Import CSV file and compare the user data
-    # opening the CSV file
-    with open('Student_data.csv', mode ='r') as file:
-
-        # reading the CSV file
-        csvFile = csv.reader(file)
-
-        arr = np.array([])
-
-        # displaying the contents of the CSV file
-        for lines in csvFile:
-            arr = np.append(arr, lines)
-
-        if data in arr:
-            print('User is available...')
-            #lcd.clear()
-            #lcd.message = " Welcome Member \n Keep  Learning "
-            GPIO.output(21, GPIO.HIGH) # High the relay
-            time.sleep(5)
-            GPIO.output(21, GPIO.LOW)
+def scan_qr_code():
+    # Scan QR code
+    with open('/dev/video0', 'rb') as f:
+        qr_code = zbarlight.scan_codes('qrcode', f.read())
+        if qr_code:
+            return qr_code[0].decode('utf-8')
         else:
-            print('Not Available')
-            #lcd.clear()
-            #lcd.message = "  Unauthorised  \nPerson or Rescan"
-            for i in range(0,10):
-                GPIO.output(20, GPIO.HIGH) # Fire buzzer
-                time.sleep(0.3)
-                GPIO.output(20, GPIO.LOW)
-                time.sleep(0.3)
+            return None
 
-    # Clean up GPIO pins
+def check_enrollment(enrollment_number):
+    # Check if enrollment number is in Google Sheets
+    cell = worksheet.find(enrollment_number)
+    return cell is not None
+
+def blink_led(pin):
+    GPIO.output(pin, GPIO.HIGH)
+    time.sleep(1)
+    GPIO.output(pin, GPIO.LOW)
+    time.sleep(1)
+
+try:
+    while True:
+        enrollment_number = scan_qr_code()
+        if enrollment_number:
+            if check_enrollment(enrollment_number):
+                blink_led(GREEN_LED_PIN)  # Valid code, blink green LED
+            else:
+                blink_led(RED_LED_PIN)  # Invalid code, blink red LED
+        else:
+            print("No QR code found")
+
+except KeyboardInterrupt:
     GPIO.cleanup()
-    
-    # Exit the loop if 'q' is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
