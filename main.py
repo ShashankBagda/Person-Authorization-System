@@ -35,8 +35,6 @@ def play_sound(sound_file):
             import winsound
             winsound.PlaySound(sound_file, winsound.SND_FILENAME)
         elif os.name == 'posix':  # macOS/Linux
-            # For macOS, you can use `afplay` (pre-installed) or `playsound`
-            # For Linux, you might need to install `aplay` or `paplay`
             os.system(f"afplay {sound_file}") # Example using afplay (macOS)
             # os.system(f"aplay {sound_file}")  # Example using aplay (Linux)
             # or os.system(f"playsound {sound_file}") if you install playsound
@@ -47,7 +45,8 @@ def play_sound(sound_file):
 
 # Example usage:
 csv_url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQP4b1WF4f8S8Odfa_MsR1GgFlMcO7XtyzB9-6-Sn4xNUKMYFcY15dybWIb_2cZ5Q/pub?gid=1976201659&single=true&output=csv'
-column_index = 4  # Column D
+column_index_name = 4  # Column D (Name)
+column_index_status = 10 # Column J (Status)
 
 search_term = None
 
@@ -83,13 +82,36 @@ except Exception as e:
     print(f"Error reading QR code: {e}")
 
 if search_term is not None:
-    matches = find_matches_in_csv(csv_url, column_index, search_term)
+    matches = find_matches_in_csv(csv_url, column_index_name, search_term)
 
     if matches is None:
-        pass
+        pass  # Handle CSV access errors
     elif matches:
-        print(f"Found '{search_term}' in rows: {matches}")
-        play_sound("access-granted.wav")
+        # Check membership status
+        try:
+            response = requests.get(csv_url)
+            response.raise_for_status()
+            csv_content = response.content.decode('utf-8')
+            reader = csv.reader(csv_content.splitlines())
+
+            for row_num, row in enumerate(reader):
+                if row_num + 1 in matches:  # Check only matching rows
+                    if len(row) > column_index_status - 1 and not row[column_index_status - 1].strip(): #check if column J is empty
+                        print(f"'{search_term}' found and membership is active.")
+                        play_sound("access-granted.wav")
+                    else:
+                        print(f"'{search_term}' found, but membership is NOT active.")
+                        play_sound("renew-membership.wav")
+                        play_sound("access-denied.wav")
+                    break #stop checking once the matched name is found
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error accessing CSV to check status: {e}")
+            play_sound("access-denied.wav") # or some other error sound
+        except Exception as e:
+            print(f"An error occurred while checking status: {e}")
+            play_sound("access-denied.wav") # or some other error sound
+
     else:
         print(f"'{search_term}' not found.")
         play_sound("access-denied.wav")
